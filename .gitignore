@@ -1,0 +1,10 @@
+# Created by .ignore support plugin (hsz.mobi)
+.idea
+libs
+
+*.so
+*.o
+*.obj
+CMakeLists.txt
+build.sh
+build
