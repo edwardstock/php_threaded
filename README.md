@@ -12,4 +12,4 @@ make
 make install
 ```
 
-Then check extension is installed: `php -m | grep threaded`
+* Then check extension is installed: `php -m | grep threaded`
