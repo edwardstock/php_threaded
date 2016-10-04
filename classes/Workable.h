@@ -1,8 +1,15 @@
+//
+// Created by Eduard Maximovich <edward.vstock@gmail.com>.
+//
+
+
 #include <iostream>
 #include <phpcpp.h>
 #include <thread>
 #include <queue>
 #include <condition_variable>
+#include <map>
+#include "PhpCallback.h"
 
 #ifndef PHP_THREADED_WORKABLE_H
 #define PHP_THREADED_WORKABLE_H
@@ -10,42 +17,20 @@
 using namespace std;
 
 class Workable : public Php::Base {
-	struct PhpCallback {
-		Php::Value callback;
-		int64_t priority = 0;
-	};
+	int64_t lastId = 1;
+	int64_t total = 0;
 
-	struct CallbackPriority {
-		bool operator()(const PhpCallback &left, const PhpCallback &right) {
-			return left.priority < right.priority;
-		}
-	};
-
-	size_t done = 0;
-	size_t total = 0;
-
-	std::priority_queue<PhpCallback, std::vector<PhpCallback>, CallbackPriority> callbacks;
+	std::priority_queue<PhpCallback *, std::vector<PhpCallback *>, PhpCallback::Priority> callbacks;
 	std::mutex locker;
 
-	std::vector<Php::Value> results;
-	Php::Value future = 0;
-
-	void runner(PhpCallback cb);
+	PhpCallback *runner(PhpCallback *cb);
 
 public:
 	Workable() : Base() {}
-
 	virtual ~Workable() = default;
 
+	Php::Value add(Php::Parameters &params);
 	void run();
-
-	void add(Php::Parameters &params);
-
-	void setFuture(Php::Parameters &params);
-
-	Php::Value getResults() {
-		return Php::Value(results);
-	}
 };
 
 

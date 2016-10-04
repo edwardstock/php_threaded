@@ -1,32 +1,53 @@
-CPP             = g++
-RM              = rm -f
-CPP_FLAGS       = -Wall -c -I. -Iclasses/. -O2 -std=c++11
+RM                  = rm -f
 
-PREFIX			= /usr
-#Edit these lines to correspond with your own directories
-LIBRARY_DIR		= $(shell php-config --extension-dir)
-PHP_CONFIG_DIR	= /etc/php.d
+ifdef CXX
+ COMPILER			=	${CXX}
+ LINKER				=	${CXX}
+else
+ COMPILER			=	g++
+ LINKER			    =	g++
+endif
 
-LD              = g++
-LD_FLAGS        = -Wall -shared -O2
-RESULT          = threaded.so
+COMPILER_FLAGS      = -Wall -g -c -I. -Iclasses/ -I$(shell php-config --include-dir) -std=c++11
+LINKER_FLAGS        = -Wall -shared
 
-PHPINIFILE		= 30-threaded.ini
+PREFIX			    = /usr
+LIBRARY_DIR		    = $(shell php-config --extension-dir)
+PHP_CONFIG_DIR	    = /etc/php.d
+PHPINIFILE		    = 30-threaded.ini
 
-SOURCES			= $(wildcard *.cpp)
-OBJECTS         = $(SOURCES:%.cpp=%.o)
 
-all:	${OBJECTS} ${RESULT}
+
+SOURCES			    = $(wildcard *.cpp) $(wildcard classes/*.cpp) $(wildcard classes/*.hpp)
+OBJECTS             = $(SOURCES:%.cpp=%.o)
+
+RESULT              = threaded.so
+
+ifeq ($(shell uname -s),Darwin)
+   	COMPILER_FLAGS += -stdlib=libc++
+   	LINKER_FLAGS += -undefined dynamic_lookup
+endif
+
+ifdef inidir
+	PHP_CONFIG_DIR = ${inidir}
+endif
+
+all:    ${OBJECTS} ${RESULT}
+
+release: LINKER_FLAGS += -O2
+release: COMPILER_FLAGS += -O2
 
 ${RESULT}: ${OBJECTS}
-		${LD} ${LD_FLAGS} -o $@ ${OBJECTS} -lphpcpp
+		${LINKER} ${LINKER_FLAGS} -o $@ ${OBJECTS} -lphpcpp
 
 clean:
 		${RM} *.obj *~* ${OBJECTS} ${RESULT}
 
 ${OBJECTS}:
-		${CPP} ${CPP_FLAGS} -fpic -o $@ ${@:%.o=%.cpp}
+		${COMPILER} ${COMPILER_FLAGS} -fpic -o $@ ${@:%.o=%.cpp}
 
 install:
 		cp -f ${RESULT} ${LIBRARY_DIR}
-		cp -f ${PHPINIFILE}	${PHP_CONFIG_DIR}
+		$(shell ./isdir ${PHP_CONFIG_DIR} && cp -f ${PHPINIFILE} ${PHP_CONFIG_DIR})
+
+

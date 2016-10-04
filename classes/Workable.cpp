@@ -1,65 +1,60 @@
 //
-// Created by Admin on 28.09.16.
+// Created by Eduard Maximovich <edward.vstock@gmail.com>.
 //
 
+#include <future>
 #include "Workable.h"
+#include "ThreadPool.cpp"
 
-void Workable::runner(PhpCallback cb) {
-	results.push_back(cb.callback());
-
-	locker.lock();
-	done++;
-	locker.unlock();
+PhpCallback *Workable::runner(PhpCallback *cb) {
+	cb->call();
+	return cb;
 }
 
-void Workable::add(Php::Parameters &params) {
+Php::Value Workable::add(Php::Parameters &params) {
 	if (params.size() < 1) {
-		return;
+		return Php::Value(nullptr);
 	}
 
-	PhpCallback cb;
-	cb.callback = params[0];
+	locker.lock();
+	const Php::Value phpCallback = params[0].clone();
+	PhpCallback *cb = new PhpCallback(lastId, phpCallback);
 	if (params.size() == 2) {
-		cb.priority = params[1];
+		cb->setPriority(params[1]);
 	}
 
 	callbacks.push(cb);
 	total++;
-}
+	lastId++;
+	locker.unlock();
 
-void Workable::setFuture(Php::Parameters &params) {
-	if (params.size() < 1) {
-		return;
-	}
-
-	future = params[0];
+	return Php::Object("CallbackFuture", cb);
 }
 
 void Workable::run() {
-	results.clear();
-
 	if (callbacks.empty()) {
 		return;
 	}
 
+	ThreadPool pool(callbacks.size());
+	std::vector<std::future<PhpCallback *>> results;
+
 	while (!callbacks.empty()) {
-		//locker.lock();
-		std::thread t(&Workable::runner, this, callbacks.top());
+		results.emplace_back(
+			pool.enqueue(&Workable::runner, this, callbacks.top())
+		);
+
 		callbacks.pop();
-		cout << "Started worker" << endl;
-		t.detach();
-		//locker.unlock();
 	}
 
-	// wait until last thread did not finished
-	while (done < total) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	locker.lock();
+	for (auto &&result: results) {
+		PhpCallback *cb = result.get();
+		cb->callFuture();
 	}
+	locker.unlock();
 
-	if (future) {
-		future(getResults());
-	}
 
-	done = 0;
+	results.clear();
 	total = 0;
 }

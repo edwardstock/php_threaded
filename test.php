@@ -1,53 +1,44 @@
 <?php
-/*
-class Workable
-{
-	const HARDWARE_CONCURRENCY = 2; // number of available hardware threads
-
-	public function add($func, $priority = 0) {
-		// adds new job
-	}
-
-	public function run() {
-	}
-
-	public function setFuture($callback) {
-	}
+function myFunction() {
+	return 'some_value';
 }
-*/
-
-$w = new \Workable();
-$w->setFuture(function($results){
-	var_dump($results);
-});
-
-$w->add(function(){
-	$c = file_get_contents('https://google.com');
-	echo "Downloaded 1\n";
-	return $c;
-}, 5);
-
-$w->add(function(){
-	$c = file_get_contents('https://google.com');
-    	echo "Downloaded 2\n";
-    	return $c;
-}, 10);
-
-$w->add(function(){
-	$c = file_get_contents('https://google.com');
-    	echo "Downloaded 3\n";
-    	return $c;
-}, 30);
-
-$w->add(function(){
-	$c = file_get_contents('https://google.com');
-    	echo "Downloaded 4\n";
-    	return $c;
-}, 40);
 
 
+$w = new Workable();
 
+$q   = 1;
+$out = [];
+$dl  = function () {
+    return myFunction();
+};
+
+$future = function($result) use(&$out, &$q) {
+    echo "Downloaded {$q}\n";
+    $out[] = $result;
+    $q++;
+};
+
+
+$w->add($dl, 5)->future($future);
+$w->add($dl, 10)->future($future);
+$w->add($dl, 30)->future($future);
+$w->add($dl, 40)->future($future);
+
+
+echo "\n == Async ==\n";
 $t = microtime(true);
 $w->run();
+
 $t = microtime(true) - $t;
-echo "\nTime spent: ". ($t * 1000)." ms\n";
+echo "\nTime spent: " . ($t * 1000) . " ms\n";
+echo sizeof($out) . PHP_EOL;
+
+echo "\n == Sync ==\n";
+
+$t   = microtime(true);
+$cnt = 4;
+for ($i = 0; $i < $cnt; $i++) {
+    //file_get_contents('https://google.com');
+}
+$t = microtime(true) - $t;
+echo "\nTime spent: " . ($t * 1000) . " ms\n";
