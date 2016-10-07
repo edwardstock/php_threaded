@@ -1,53 +1,17 @@
 <?php
-/*
-class Workable
-{
-	const HARDWARE_CONCURRENCY = 2; // number of available hardware threads
+error_reporting(E_ALL | E_NOTICE);
+ini_set('display_errors', 'on');
 
-	public function add($func, $priority = 0) {
-		// adds new job
-	}
+$a = 0;
+$cb = function()use($a){
+	throw new \Exception('test');
+	return 1;
+};
+$q = 'a';
+echo testCalling($cb);
 
-	public function run() {
-	}
-
-	public function setFuture($callback) {
-	}
-}
-*/
-
-$w = new \Workable();
-$w->setFuture(function($results){
-	var_dump($results);
-});
-
-$w->add(function(){
-	$c = file_get_contents('https://google.com');
-	echo "Downloaded 1\n";
-	return $c;
-}, 5);
-
-$w->add(function(){
-	$c = file_get_contents('https://google.com');
-    	echo "Downloaded 2\n";
-    	return $c;
-}, 10);
-
-$w->add(function(){
-	$c = file_get_contents('https://google.com');
-    	echo "Downloaded 3\n";
-    	return $c;
-}, 30);
-
-$w->add(function(){
-	$c = file_get_contents('https://google.com');
-    	echo "Downloaded 4\n";
-    	return $c;
-}, 40);
+unset($q);
 
 
 
-$t = microtime(true);
-$w->run();
-$t = microtime(true) - $t;
-echo "\nTime spent: ". ($t * 1000)." ms\n";
+
