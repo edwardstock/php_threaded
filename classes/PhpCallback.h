@@ -6,6 +6,10 @@
 #include <phpcpp.h>
 #include <iostream>
 #include <mutex>
+#include <utility>
+#include <type_traits>
+#include <php.h>
+
 
 #ifndef PHP_THREADED_PHPCALLBACK_H
 #define PHP_THREADED_PHPCALLBACK_H
@@ -23,8 +27,10 @@ class PhpCallback : public Php::Base {
 	friend class Workable;
 
 public:
+	typedef std::shared_ptr<PhpCallback> Ptr;
+
 	struct Priority {
-		bool operator()(const PhpCallback *left, const PhpCallback *right) const {
+		bool operator()(const PhpCallback::Ptr &left, const PhpCallback::Ptr &right) const {
 			return left->getPriority() < right->getPriority();
 		}
 	};
@@ -41,19 +47,20 @@ public:
 	/**
 	 * Destructor
 	 */
-	virtual ~PhpCallback() = default;
+	~PhpCallback() {
+	};
 
 	/**
 	 * @return const id value
 	 */
-	Php::Value getId() const {
+	inline Php::Value getId() const {
 		return Php::Value(id);
 	}
 
 	/**
 	 * @return const priority in priority queue
 	 */
-	Php::Value getPriority() const {
+	inline Php::Value getPriority() const {
 		return Php::Value(priority);
 	}
 

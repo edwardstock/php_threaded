@@ -6,7 +6,7 @@
 #include "Workable.h"
 #include "ThreadPool.cpp"
 
-PhpCallback *Workable::runner(PhpCallback *cb) {
+PhpCallback::Ptr Workable::runner(PhpCallback::Ptr cb) {
 	cb->call();
 	return cb;
 }
@@ -17,10 +17,9 @@ Php::Value Workable::add(Php::Parameters &params) {
 	}
 
 	locker.lock();
-	const Php::Value phpCallback = params[0].clone();
-	PhpCallback *cb = new PhpCallback(lastId, phpCallback);
+	PhpCallback::Ptr cb(new PhpCallback(lastId, params.at(0)));
 	if (params.size() == 2) {
-		cb->setPriority(params[1]);
+		cb->setPriority(params.at(1));
 	}
 
 	callbacks.push(cb);
@@ -28,7 +27,7 @@ Php::Value Workable::add(Php::Parameters &params) {
 	lastId++;
 	locker.unlock();
 
-	return Php::Object("CallbackFuture", cb);
+	return Php::Object("CallbackFuture", cb.get());
 }
 
 void Workable::run() {
@@ -37,7 +36,7 @@ void Workable::run() {
 	}
 
 	ThreadPool pool(callbacks.size());
-	std::vector<std::future<PhpCallback *>> results;
+	std::vector<std::future<PhpCallback::Ptr>> results;
 
 	while (!callbacks.empty()) {
 		results.emplace_back(
@@ -45,15 +44,14 @@ void Workable::run() {
 		);
 
 		callbacks.pop();
+
 	}
 
-	locker.lock();
+//	locker.lock();
 	for (auto &&result: results) {
-		PhpCallback *cb = result.get();
-		cb->callFuture();
+		result.get()->callFuture();
 	}
-	locker.unlock();
-
+//	locker.unlock();
 
 	results.clear();
 	total = 0;

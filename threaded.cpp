@@ -8,6 +8,10 @@
 #include <condition_variable>
 #include "classes/Workable.h"
 
+#ifndef ZTS
+#error "TSRM is not available. Please, compile your php with --enable-maintainer-tsrm flag"
+#endif
+
 using namespace std;
 
 // Symbols are exported according to the "C" language

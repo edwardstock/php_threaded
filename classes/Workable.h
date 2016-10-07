@@ -2,7 +2,6 @@
 // Created by Eduard Maximovich <edward.vstock@gmail.com>.
 //
 
-
 #include <iostream>
 #include <phpcpp.h>
 #include <thread>
@@ -20,10 +19,10 @@ class Workable : public Php::Base {
 	int64_t lastId = 1;
 	int64_t total = 0;
 
-	std::priority_queue<PhpCallback *, std::vector<PhpCallback *>, PhpCallback::Priority> callbacks;
+	std::priority_queue<PhpCallback::Ptr, std::vector<PhpCallback::Ptr>, PhpCallback::Priority> callbacks;
 	std::mutex locker;
 
-	PhpCallback *runner(PhpCallback *cb);
+	PhpCallback::Ptr runner(PhpCallback::Ptr cb);
 
 public:
 	Workable() : Base() {}

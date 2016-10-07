@@ -1,4 +1,5 @@
 RM                  = rm -f
+MKDIR               = mkdir -p
 
 ifdef CXX
  COMPILER			=	${CXX}
@@ -8,8 +9,8 @@ else
  LINKER			    =	g++
 endif
 
-COMPILER_FLAGS      = -Wall -g -c -I. -Iclasses/ -I$(shell php-config --include-dir) -std=c++11
-LINKER_FLAGS        = -Wall -shared
+COMPILER_FLAGS      = -Wall -g -c -I. -Iclasses/ $(shell php-config --includes) -std=c++11 -pthread
+LINKER_FLAGS        = -Wall -shared -pthread
 
 PREFIX			    = /usr
 LIBRARY_DIR		    = $(shell php-config --extension-dir)
@@ -33,6 +34,9 @@ ifdef inidir
 endif
 
 all:    ${OBJECTS} ${RESULT}
+
+shared_directories:
+	${MKDIR} _build
 
 release: LINKER_FLAGS += -O2
 release: COMPILER_FLAGS += -O2
