@@ -2,6 +2,7 @@
 // Created by Eduard Maximovich <edward.vstock@gmail.com>.
 //
 
+
 #include <cstdint>
 #include <phpcpp.h>
 #include <iostream>
@@ -9,75 +10,100 @@
 #include <utility>
 #include <type_traits>
 #include <php.h>
-
+#include <thread>
+#include <phpcpp/tsrm.h>
 
 #ifndef PHP_THREADED_PHPCALLBACK_H
 #define PHP_THREADED_PHPCALLBACK_H
 
 using namespace std;
 
-class PhpCallback : public Php::Base {
-	int64_t id;
-	int64_t priority = 0;
-	Php::Value callback;
-	Php::Value result = 0;
-	Php::Value futureFunction = nullptr;
-	std::mutex locker;
+class PhpCallback : public Php::Base
+{
+    int64_t id;
+    int64_t priority = 0;
+    Php::Value callback;
+    Php::Value result;
+    Php::Value futureFunction;
+    std::mutex locker;
 
-	friend class Workable;
+    friend class Workable;
 
 public:
-	typedef std::shared_ptr<PhpCallback> Ptr;
+    typedef std::shared_ptr<PhpCallback> Ptr;
 
-	struct Priority {
-		bool operator()(const PhpCallback::Ptr &left, const PhpCallback::Ptr &right) const {
-			return left->getPriority() < right->getPriority();
-		}
-	};
+    struct Priority
+    {
+        bool operator()(const PhpCallback::Ptr &left, const PhpCallback::Ptr &right) const
+        {
+            return left->getPriority() < right->getPriority();
+        }
+    };
 
-	/**
-	 * Constructor
-	 * @param id
-	 * @param callback
-	 * @param priority
-	 * @return
-	 */
-	PhpCallback(const int64_t id, const Php::Value callback);
+    /**
+     * Constructor
+     * @param id
+     * @param callback
+     * @param priority
+     * @return
+     */
+    PhpCallback(const int64_t id, const Php::Value userCallback);
 
-	/**
-	 * Destructor
-	 */
-	~PhpCallback() {
-	};
+    /**
+     * Destructor
+     */
+    ~PhpCallback()
+    {
+        this->destruct();
+    };
 
-	/**
-	 * @return const id value
-	 */
-	inline Php::Value getId() const {
-		return Php::Value(id);
-	}
+    void __destruct() const
+    {
+        this->destruct();
+    }
 
-	/**
-	 * @return const priority in priority queue
-	 */
-	inline Php::Value getPriority() const {
-		return Php::Value(priority);
-	}
+    /**
+     * @return const id value
+     */
+    Php::Value getId() const
+    {
+        return Php::Value(id);
+    }
 
-	Php::Value getResult() const {
-		return result;
-	}
+    /**
+     * @return const priority in priority queue
+     */
+    Php::Value getPriority() const
+    {
+        return Php::Value(priority);
+    }
 
-	void setPriority(int64_t priority);
+    Php::Value getResult() const
+    {
+        return result;
+    }
 
-	void setFuture(Php::Parameters &params);
+    /**
+     * Queue priority
+     * @param priority
+     */
+    void setPriority(int64_t priority);
 
-	void setResult(Php::Value value = nullptr);
+    /**
+     * Future callback function
+     * @param params
+     */
+    void setFuture(Php::Parameters &params);
 
-	void call();
+private:
+    void destruct() const
+    {
+    }
+    void setResult(Php::Value value = nullptr);
 
-	void callFuture();
+    void call();
+
+    void callFuture();
 };
-
 
 #endif //PHP_THREADED_PHPCALLBACK_H

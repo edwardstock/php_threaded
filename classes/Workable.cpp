@@ -6,53 +6,64 @@
 #include "Workable.h"
 #include "ThreadPool.cpp"
 
-PhpCallback::Ptr Workable::runner(PhpCallback::Ptr cb) {
-	cb->call();
-	return cb;
+PhpCallback::Ptr Workable::runner(PhpCallback::Ptr cb)
+{
+    Php::Thread::prepare();
+    cb->call();
+    return cb;
 }
 
-Php::Value Workable::add(Php::Parameters &params) {
-	if (params.size() < 1) {
-		return Php::Value(nullptr);
-	}
+Php::Value Workable::add(Php::Parameters &params)
+{
+    if (params.size() < 1) {
+        return Php::Value(nullptr);
+    }
 
-	locker.lock();
-	PhpCallback::Ptr cb(new PhpCallback(lastId, params.at(0)));
-	if (params.size() == 2) {
-		cb->setPriority(params.at(1));
-	}
+    locker.lock();
+    PhpCallback::Ptr cb = std::make_shared<PhpCallback>(lastId, params.at(0));
+    if (params.size() == 2) {
+        cb->setPriority(params.at(1));
+    }
 
-	callbacks.push(cb);
-	total++;
-	lastId++;
-	locker.unlock();
+    callbacks.push(cb);
+    total++;
+    lastId++;
+    locker.unlock();
 
-	return Php::Object("CallbackFuture", cb.get());
+    return Php::Object("CallbackFuture", cb.get());
 }
 
-void Workable::run() {
-	if (callbacks.empty()) {
-		return;
-	}
+void Workable::run()
+{
+    if (callbacks.empty()) {
+        return;
+    }
 
-	ThreadPool pool(callbacks.size());
-	std::vector<std::future<PhpCallback::Ptr>> results;
+    std::vector<std::future<PhpCallback::Ptr >> results;
 
-	while (!callbacks.empty()) {
-		results.emplace_back(
-			pool.enqueue(&Workable::runner, this, callbacks.top())
-		);
+    if (callbacks.size() == 1) {
+        callbacks.top()->call();
+        callbacks.top()->callFuture();
+        callbacks.pop();
 
-		callbacks.pop();
+        total = 0;
+        results.clear();
+        return;
+    }
 
-	}
+    ThreadPool pool(callbacks.size());
 
-//	locker.lock();
-	for (auto &&result: results) {
-		result.get()->callFuture();
-	}
-//	locker.unlock();
+    while (!callbacks.empty()) {
+        results.emplace_back(
+            pool.enqueue(&Workable::runner, this, callbacks.top())
+        );
+        callbacks.pop();
+    }
 
-	results.clear();
-	total = 0;
+    for (auto &&result: results) {
+        result.get()->callFuture();
+    }
+
+    total = 0;
+    results.clear();
 }

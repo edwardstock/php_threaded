@@ -15,22 +15,28 @@
 
 using namespace std;
 
-class Workable : public Php::Base {
-	int64_t lastId = 1;
-	int64_t total = 0;
+class Workable : public Php::Base
+{
+    int64_t lastId = 1;
+    int64_t total = 0;
 
-	std::priority_queue<PhpCallback::Ptr, std::vector<PhpCallback::Ptr>, PhpCallback::Priority> callbacks;
-	std::mutex locker;
+    std::priority_queue<
+        PhpCallback::Ptr,
+        std::vector<PhpCallback::Ptr>,
+        PhpCallback::Priority
+    > callbacks;
 
-	PhpCallback::Ptr runner(PhpCallback::Ptr cb);
+    std::mutex locker;
+
+    PhpCallback::Ptr runner(PhpCallback::Ptr);
 
 public:
-	Workable() : Base() {}
-	virtual ~Workable() = default;
+    Workable() : Base() {}
+    ~Workable() {}
+    void __destruct() const {}
 
-	Php::Value add(Php::Parameters &params);
-	void run();
+    Php::Value add(Php::Parameters &params);
+    void run();
 };
-
 
 #endif //PHP_THREADED_WORKABLE_H

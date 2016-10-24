@@ -25,7 +25,7 @@ OBJECTS             = $(SOURCES:%.cpp=%.o)
 RESULT              = threaded.so
 
 ifeq ($(shell uname -s),Darwin)
-   	COMPILER_FLAGS += -stdlib=libc++
+   	COMPILER_FLAGS += -stdlib=libc++ -Wno-deprecated-register
    	LINKER_FLAGS += -undefined dynamic_lookup
 endif
 
@@ -53,5 +53,7 @@ ${OBJECTS}:
 install:
 		cp -f ${RESULT} ${LIBRARY_DIR}
 		$(shell ./isdir ${PHP_CONFIG_DIR} && cp -f ${PHPINIFILE} ${PHP_CONFIG_DIR})
+
+d: clean all install
 
 
