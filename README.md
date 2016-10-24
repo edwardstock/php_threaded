@@ -50,3 +50,12 @@ $workable->run();
 // Profit! But not yet (thx to php developers)
 
 ```
+
+## Why not working and what need to do to get working extension
+ - why
+    1. Very poor and deprecated PHP ZTS (TSRM) documentation and php nothings doing to make transparent multi-threaded usage of user defined data (like global executors, global compilers, file loaders, etc)
+    2. Memory management
+    
+ - todo
+    1. Copy user defined data to local storage
+    2. Test PHP-CPP lib by memory management, cause hard to catch double freeing variables or vise versa creating not persistent string pointers that dies when u try to use it in new thread (see php emalloc) 
