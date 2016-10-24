@@ -19,3 +19,34 @@ echo "extension=threaded.so" >> /path/to/php.ini
 ```
 
 * Then check extension is installed: `php -m | grep threaded`
+
+
+## Usage
+
+```php
+<?php
+
+// creating job function
+$jobFunction = function(){
+    return file_get_contents('http://exmample.com');
+};
+
+// creating future success function
+$success = function($result) {
+    file_put_contents('/tmp/example_com.html', $result, mb_strlen($result, '8bit'));
+};
+
+// instance of thread manager
+$workable = new \Workable();
+
+for($i = 0; $i < 10; $i++) {
+    // adding tasks to priority queue
+    $workable->add($jobFunction, $priority = 10)->future($success);
+}
+
+// run added jobs
+$workable->run();
+
+// Profit! But not yet (thx to php developers)
+
+```
